@@ -5,6 +5,7 @@ const app = express();
 const fs = require('fs');
 const path = require('path');
 
+
 app.use(express.urlencoded({extended:true}));
 
 app.use(express.json());
@@ -19,15 +20,21 @@ app.get('/api/notes', (req,res)=>{
   }
   res.json(results);
 });
-app.get('/api/notes/:title', (req,res)=>{
-  const result = findByTitle(req.params.title,notes)
+app.delete('/api/notes/:id', (req,res)=>{
+  const result = findById(req.params.id,notes)
   res.json(result);
 });
 
 app.post('/api/notes',(req,res)=>{
-  console.log(req.body);
+
+  req.body.id=notes.length.toString();
+
+    if(!validateNote(req.body)){
+        res.status(400).send('the title is already taken');
+    }else{
   const note = createNewNote(req.body,notes);
-  res.json(notes);
+  res.json(note);
+    }
 });
 
 app.get('/',(req,res)=>{
@@ -37,14 +44,30 @@ app.get('/',(req,res)=>{
 app.get('/notes',(req,res)=>{
   res.sendFile(path.join(__dirname,'./public/notes.html'))
 })
+app.get('/assets/css/styles.css',(req,res)=>{
+    res.sendFile(path.join(__dirname,'./public/assets/css/styles.css'))
+});
+app.get('/assets/js/index.js',(req,res)=>{
+        res.sendFile(path.join(__dirname,'./public/assets/js/index.js'))
+});
 
 app.listen(PORT, () => {
     console.log(`API server now on port ${PORT}!`);
   });
+
+  
+  function validateNote(note){
+      if(!note.title||typeof note.title !=='string'){
+          return false;
+      }else{
+          return true;
+      }
+  }
   function createNewNote(body, notesArray){
     const note = body;
   
     notesArray.push(note);
+
     fs.writeFileSync(
       path.join(__dirname,'./db/db.json'),
       JSON.stringify({notes},null,2)
@@ -54,8 +77,8 @@ app.listen(PORT, () => {
   };
   
   
-  function findByTitle (title,notesArray) {
-    const result = notesArray.filter(note => note.title === title)[0];
+  function findById (id,notesArray) {
+    const result = notesArray.filter(note => note.id === id)[0];
     return result;
   }
   
